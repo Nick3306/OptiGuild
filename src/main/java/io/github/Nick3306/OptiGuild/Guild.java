@@ -1,18 +1,28 @@
 package io.github.Nick3306.OptiGuild;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.bukkit.entity.Player;
 
 public class Guild 
 {
-	ArrayList<Player> members = new ArrayList<Player>();
-	ArrayList<Player> coleaders = new ArrayList<Player>();
-	Player leader;
+	ArrayList<UUID> members = new ArrayList<UUID>();
+	ArrayList<UUID> coleaders = new ArrayList<UUID>();
+	UUID leader;
 	int rank;
 	int wins;
 	int losses;
 	String name;
+	
+	Guild(String name, int rank, int wins, int losses, UUID leader)
+	{
+		this.name = name;
+		this.rank = rank;
+		this.wins = wins;
+		this.losses = losses;
+		this.leader = leader;
+	}
 	
 	int getRank()
 	{
@@ -26,7 +36,7 @@ public class Guild
 	{
 		return losses;
 	}
-	Player getLeader()
+	UUID getLeader()
 	{
 		return leader;
 	}
