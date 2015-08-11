@@ -15,6 +15,7 @@ public class Main extends JavaPlugin
     public void onEnable()
     {
     	getCommand("Guild").setExecutor(new GuildC(this));
+    	getCommand("G").setExecutor(new GuildC(this));
     	PluginManager pm = getServer().getPluginManager();
     	this.getConfig().options().copyDefaults(true);
     	saveDefaultConfig();

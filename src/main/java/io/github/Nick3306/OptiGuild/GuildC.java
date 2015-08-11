@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -23,10 +24,36 @@ public class GuildC implements CommandExecutor
 	{
 		if(command.getName().equalsIgnoreCase("guild") || command.getName().equalsIgnoreCase("g"))
 		{
+			if(args.length == 0)
+			{
+				sender.sendMessage(ChatColor.DARK_RED + "______OptiGuild______");
+				sender.sendMessage(ChatColor.GREEN+ "/g create (guildname)");
+				sender.sendMessage(ChatColor.YELLOW + "Creates a guild");
+				sender.sendMessage(ChatColor.GREEN+"/g addmember (guildname) (playername)");
+				sender.sendMessage(ChatColor.YELLOW + "Add a player to the specified guild");
+				sender.sendMessage(ChatColor.GREEN+"/g removemember (guildname) (playername)");
+				sender.sendMessage(ChatColor.YELLOW + "Removes a player from specified guild");
+				sender.sendMessage(ChatColor.GREEN+"/g leave");
+				sender.sendMessage(ChatColor.YELLOW + "Leave whatever guild you are in");
+				sender.sendMessage(ChatColor.GREEN+"/g promote (guildname) (playername) (coleader/leader)");
+				sender.sendMessage(ChatColor.YELLOW + "Promotes a member to the specified position");
+				sender.sendMessage(ChatColor.GREEN+"/g list (rank/wins/losses)");
+				sender.sendMessage(ChatColor.YELLOW + "Lists all guilds sorted in the specified manner or by creation date with no param");
+			}
+		else{
 			if (args[0].equalsIgnoreCase("create"))
 			{
+				UUID senderUUID = ((Player) sender).getUniqueId();
 				if(args.length == 2)
 				{
+					for(int i = 0; i < plugin.guilds.size(); i++)
+					{
+						if(plugin.guilds.get(i).leader.equals(senderUUID) || plugin.guilds.get(i).coleaders.contains(senderUUID) || plugin.guilds.get(i).members.contains(senderUUID))
+						{
+							sender.sendMessage("You are already in a guild!!!");
+							return false;
+						}
+					}
 					for(int i = 0; i < this.plugin.guilds.size(); i++)
 					{
 						if(this.plugin.guilds.get(i).getName().equalsIgnoreCase(args[1]))
@@ -35,16 +62,16 @@ public class GuildC implements CommandExecutor
 							return false;
 						}
 					}
-					UUID leader = ((Player) sender).getUniqueId();
-					Guild newGuild = new Guild(args[1], 1, 0, 0, leader);
+					Guild newGuild = new Guild(args[1], 1, 0, 0, senderUUID);
 					plugin.guilds.add(newGuild);
-					plugin.getConfig().set("guilds." + args[1] + ".Leader", leader.toString());
-					plugin.getConfig().set("guilds." + args[1] + ".Cod-Leaders", "");
-					plugin.getConfig().set("guilds." + args[1] + ".Members", "");
+					plugin.getConfig().set("guilds." + args[1] + ".leader", senderUUID.toString());
+					plugin.getConfig().set("guilds." + args[1] + ".coleaders", "");
+					plugin.getConfig().set("guilds." + args[1] + ".members", "");
 					plugin.getConfig().set("guilds." + args[1] + ".rank", 1);
 					plugin.getConfig().set("guilds." + args[1] + ".wins", 0);
 					plugin.getConfig().set("guilds." + args[1] + ".losses", 0);
 					plugin.saveConfig();
+					sender.sendMessage(ChatColor.GREEN + "Guild Created!");
 					return true;
 				}
 				else
@@ -70,7 +97,7 @@ public class GuildC implements CommandExecutor
 					if(found == true)
 					{
 						UUID senderUUID = ((Player) sender).getUniqueId();
-						if(senderUUID == target.getLeader() || target.coleaders.contains(senderUUID))
+						if(senderUUID.equals(target.getLeader()) || target.coleaders.contains(senderUUID))
 						{
 							if (Bukkit.getOfflinePlayer(args[2]) != null)
 							{
@@ -93,33 +120,34 @@ public class GuildC implements CommandExecutor
 									{
 										plugin.guilds.get(i).members.add(member);
 										plugin.saveConfig();
+										sender.sendMessage(ChatColor.GREEN + "Member added!!");
 										return true;
 									}
 								}
 							}
 							else
 							{
-								sender.sendMessage("Player " + args[2] + " does not exist!!!" );
+								sender.sendMessage(ChatColor.GREEN + "Player " + args[2] + " does not exist!!!" );
 								return false;
 							}
 							
 						}
 						else
 						{
-							sender.sendMessage("You do not have permission to add members to this guild!");
+							sender.sendMessage(ChatColor.GREEN + "You do not have permission to add members to this guild!");
 							return false;
 						}
 						
 					}
 					else
 					{
-						sender.sendMessage("Guild does not exist!");
+						sender.sendMessage(ChatColor.GREEN + "Guild does not exist!");
 						return false;
 					}
 				}
 				else
 				{
-					sender.sendMessage("Incorrect usage! /g addmemeber (guildname) (membername)");
+					sender.sendMessage(ChatColor.GREEN + "Incorrect usage! /g addmemeber (guildname) (membername)");
 					return false;
 				}
 			}
@@ -140,12 +168,20 @@ public class GuildC implements CommandExecutor
 					if(found = true)
 					{
 						UUID senderUUID = ((Player) sender).getUniqueId();
-						if(senderUUID == target.getLeader() || target.coleaders.contains(senderUUID))
+						if(senderUUID.equals(target.getLeader()) || target.coleaders.contains(senderUUID))
 						{
 							if (Bukkit.getOfflinePlayer(args[2]) != null)
 							{
 								UUID member = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
-								
+								if(target.getLeader().equals(member))
+								{
+									sender.sendMessage(ChatColor.GREEN + "You can not remove the leader from the guild!");
+									return false;
+								}
+								if(target.coleaders.contains(senderUUID) && target.coleaders.contains(member))
+								{
+									sender.sendMessage(ChatColor.GREEN + "Coleaders can not remove other coleaders!");
+								}
 								if(target.members.contains(member))
 								{
 									List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
@@ -158,37 +194,39 @@ public class GuildC implements CommandExecutor
 										if(target == plugin.guilds.get(i))
 										{
 											plugin.guilds.get(i).members.remove(member);
+											sender.sendMessage(ChatColor.GREEN + "Player removed from guild");
+											return true;
 										}
 									}
 								}
 								else
 								{
-									sender.sendMessage("The player is not in the guild!");
+									sender.sendMessage(ChatColor.GREEN + "The player is not in the guild!");
 								}
 							}
 							else
 							{
-								sender.sendMessage("Player " + args[2] + " does not exist!!!" );
+								sender.sendMessage(ChatColor.GREEN + "Player " + args[2] + " does not exist!!!" );
 								return false;
 							}
 							
 						}
 						else
 						{
-							sender.sendMessage("You do not have permission to remove members from this guild!");
+							sender.sendMessage(ChatColor.GREEN + "You do not have permission to remove members from this guild!");
 							return false;
 						}
 						
 					}
 					else
 					{
-						sender.sendMessage("Guild does not exist!");
+						sender.sendMessage(ChatColor.GREEN + "Guild does not exist!");
 						return false;
 					}
 				}
 				else
 				{
-					sender.sendMessage("Incorrect usage! /g removememeber (guildname) (membername)");
+					sender.sendMessage(ChatColor.GREEN + "Incorrect usage! /g removememeber (guildname) (membername)");
 					return false;
 				}
 			}
@@ -196,14 +234,16 @@ public class GuildC implements CommandExecutor
 			{
 				if(args.length == 1)
 				{
+					sender.sendMessage(ChatColor.GREEN + "______Guilds______");
 					for(int i = 0; i < plugin.guilds.size(); i++)
 					{
-						sender.sendMessage(plugin.guilds.get(i).getName());
+						sender.sendMessage(ChatColor.YELLOW +plugin.guilds.get(i).getName());
 					}
 					return true;
 				}
 				if(args.length == 2)
 				{
+					sender.sendMessage(ChatColor.GREEN + "______Guilds______");
 					if(args[1].equals("rank"))
 					{
 						ArrayList<Guild>sorted = plugin.guilds;
@@ -212,7 +252,7 @@ public class GuildC implements CommandExecutor
 						quickSort(sorted, low, high, "rank");
 						for(int i = 0; i < sorted.size(); i++)
 						{
-							sender.sendMessage(sorted.get(i).getName());
+							sender.sendMessage(ChatColor.YELLOW + sorted.get(i).getName());
 						}
 						return true;
 					}
@@ -224,7 +264,7 @@ public class GuildC implements CommandExecutor
 						quickSort(sorted, low, high, "wins");
 						for(int i = 0; i < sorted.size(); i++)
 						{
-							sender.sendMessage(sorted.get(i).getName());
+							sender.sendMessage(ChatColor.YELLOW + sorted.get(i).getName());
 						}
 						return true;
 					}
@@ -236,7 +276,7 @@ public class GuildC implements CommandExecutor
 						quickSort(sorted, low, high, "losses");
 						for(int i = 0; i < sorted.size(); i++)
 						{
-							sender.sendMessage(sorted.get(i).getName());
+							sender.sendMessage(ChatColor.YELLOW + sorted.get(i).getName());
 						}
 						return true;
 					}
@@ -247,47 +287,99 @@ public class GuildC implements CommandExecutor
 			{
 				if(args.length == 3)
 				{
-					Guild target = null;
-					boolean found = false;
 					UUID senderUUID = ((Player) sender).getUniqueId();
-					for(int i = 0; i < plugin.guilds.size(); i++)
+					if(args[3].equalsIgnoreCase("leader"))
 					{
-						if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[2]))
-							{
-								found = true;
-								target = plugin.guilds.get(i);
-								
-								if(senderUUID == plugin.guilds.get(i).getLeader())
+						for(int i = 0; i < plugin.guilds.size(); i++)
+						{
+							if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[1]))
 								{
-									UUID memberUUID = Bukkit.getOfflinePlayer(args[3]).getUniqueId();
-									if(plugin.guilds.get(i).members.contains(memberUUID))
+									if(senderUUID.equals(plugin.guilds.get(i).getLeader()))
 									{
-										plugin.guilds.get(i).members.remove(memberUUID);
-										plugin.guilds.get(i).coleaders.add(memberUUID);
-										List<String> list = this.plugin.getConfig().getStringList("guilds." + args[2] + ".members");
-										list.remove(memberUUID.toString());
-										List<String> list2 = this.plugin.getConfig().getStringList("guilds." + args[2] + ".coleaders");
-										list2.add(memberUUID.toString());
-										plugin.saveConfig();
-										return true;	
+										UUID memberUUID = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+										if(plugin.guilds.get(i).members.contains(memberUUID))
+										{
+											plugin.guilds.get(i).members.remove(memberUUID);
+											plugin.guilds.get(i).leader = memberUUID;
+											List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
+											list.remove(memberUUID.toString());
+											list.add(senderUUID.toString());
+											plugin.getConfig().set("guilds." + args[2] + ".members", list);
+											this.plugin.getConfig().set("guilds." + args[1] + ".leader", memberUUID.toString());
+											plugin.saveConfig();
+											sender.sendMessage(ChatColor.GREEN + "User has been promoted!");
+											return true;	
+										}
+										if(plugin.guilds.get(i).coleaders.contains(memberUUID))
+										{
+											plugin.guilds.get(i).coleaders.remove(memberUUID);
+											plugin.guilds.get(i).leader = memberUUID;
+											List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".coleaders");
+											list.remove(memberUUID.toString());
+											plugin.getConfig().set("guilds." + args[2] + ".coleaders", list);
+											List<String> list2 = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
+											list2.add(senderUUID.toString());
+											plugin.getConfig().set("guilds." + args[2] + ".members", list2);	
+											this.plugin.getConfig().set("guilds." + args[1] + ".leader", memberUUID.toString());
+											plugin.saveConfig();
+											sender.sendMessage(ChatColor.GREEN + "User has been promoted!");
+											return true;	
+										}
+										else
+										{
+											sender.sendMessage(ChatColor.GREEN + "This player is not a memeber in the guild");
+											return false;
+										}
 									}
 									else
 									{
-										sender.sendMessage("This player is not a memeber int he guild!!!");
+										sender.sendMessage(ChatColor.GREEN + "You do not have permission to promote in this guild");
 										return false;
 									}
 								}
-								else
+						}
+					}
+					if(args[3].equalsIgnoreCase("coleader"))
+					{
+						for(int i = 0; i < plugin.guilds.size(); i++)
+						{
+							if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[1]))
 								{
-									sender.sendMessage("You do not have permission to promote in this guild");
-									return false;
+									if(senderUUID == plugin.guilds.get(i).getLeader())
+									{
+										UUID memberUUID = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+										if(plugin.guilds.get(i).members.contains(memberUUID))
+										{
+											plugin.guilds.get(i).members.remove(memberUUID);
+											plugin.guilds.get(i).coleaders.add(memberUUID);
+											List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
+											list.remove(memberUUID.toString());
+											plugin.getConfig().set("guilds." + args[2] + ".members", list);
+											List<String> list2 = this.plugin.getConfig().getStringList("guilds." + args[1] + ".coleaders");
+											list2.add(memberUUID.toString());
+											plugin.getConfig().set("guilds." + args[1] + ".coleaders", list);
+											plugin.saveConfig();
+											sender.sendMessage(ChatColor.GREEN + "User has been promoted!");
+											return true;	
+										}
+										else
+										{
+											sender.sendMessage(ChatColor.GREEN + "This player is not a memeber in the guild!!!");
+											return false;
+										}
+									}
+									else
+									{
+										sender.sendMessage(ChatColor.GREEN + "You do not have permission to promote in this guild");
+										return false;
+									}
 								}
-							}
-					}	
+						}	
+					}
 				}
 				else
 				{
-					sender.sendMessage("Incorrect usage!! /g promote (playername) (guildname)");
+					sender.sendMessage(ChatColor.GREEN + "Incorrect usage!! /g promote (guildname) (playername) (position)");
 					return false;
 				}
 			}
@@ -307,6 +399,8 @@ public class GuildC implements CommandExecutor
 								plugin.getConfig().set("guilds." + args[1] + ".Members", list);
 								plugin.saveConfig();
 								plugin.guilds.get(i).members.remove(senderUUID);
+								sender.sendMessage(ChatColor.GREEN + "You have left the guild " + args[1]);
+								return true;
 							}
 							if(plugin.guilds.get(i).coleaders.contains(senderUUID))
 							{
@@ -315,30 +409,34 @@ public class GuildC implements CommandExecutor
 								plugin.getConfig().set("guilds." + args[1] + ".coleaders", list);
 								plugin.saveConfig();
 								plugin.guilds.get(i).coleaders.remove(senderUUID);
+								sender.sendMessage(ChatColor.GREEN + "You have left the guild " + args[1]);
+								return true;
 							}
-							if(plugin.guilds.get(i).leader == senderUUID)
+							if(plugin.guilds.get(i).leader.equals(senderUUID))
 							{
-								sender.sendMessage("You must promote a new leader before leaving!!");
+								sender.sendMessage(ChatColor.GREEN + "You must promote a new leader before leaving!!");
 								return false;
 							}
 						}
 						else
 						{
-							sender.sendMessage("Tat guild does not exist!!!");
+							sender.sendMessage(ChatColor.GREEN + "That guild does not exist!!!");
 							return false;
 						}
 					}
 				}
 				else
 				{
-					sender.sendMessage("Incorrect usage!! /g leave (guildname)");
+					sender.sendMessage(ChatColor.GREEN + "Incorrect usage!! /g leave (guildname)");
 					return false;
 				}
 			}
 			
 		}
+		}
 		return false;
 	}
+	
 	public void quickSort(ArrayList<Guild> sorted, int low, int high, String item) 
 	{
 		if(item.equalsIgnoreCase("rank"))

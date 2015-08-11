@@ -4,6 +4,11 @@ version: .01
 commands:
    guild:
       description: A guild System
-      usage: /g (param)
+      usage:
+      permission: 
+      permission-message:
+   g:
+      description: A guild System
+      usage:
       permission: 
       permission-message:
