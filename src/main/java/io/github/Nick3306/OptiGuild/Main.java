@@ -18,7 +18,7 @@ public class Main extends JavaPlugin
     	PluginManager pm = getServer().getPluginManager();
     	this.getConfig().options().copyDefaults(true);
     	saveDefaultConfig();
-    	if(this.getConfig().getConfigurationSection("arenas") != null)
+    	if(this.getConfig().getConfigurationSection("guilds") != null)
 		{
     		getLogger().info("Getting Guilds");
     		String[] configGuilds = this.getConfig().getConfigurationSection("guilds").getKeys(false).toArray(new String[0]);
@@ -48,7 +48,7 @@ public class Main extends JavaPlugin
     	}
     	else
     	{
-    		getLogger().info("No guilds to include");
+    		getLogger().info("No guilds to load");
     	}
     		
     	
