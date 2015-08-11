@@ -1,0 +1,9 @@
+name: OptiGuild
+main: io.github.Nick3306.OptiGuild.Main
+version: .01
+commands:
+   guild:
+      description: A guild System
+      usage: /g (param)
+      permission: 
+      permission-message:

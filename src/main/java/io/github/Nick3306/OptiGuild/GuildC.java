@@ -38,17 +38,19 @@ public class GuildC implements CommandExecutor
 					UUID leader = ((Player) sender).getUniqueId();
 					Guild newGuild = new Guild(args[1], 1, 0, 0, leader);
 					plugin.guilds.add(newGuild);
-					plugin.getConfig().set("guilds." + args[1] + ".Leader", leader);
+					plugin.getConfig().set("guilds." + args[1] + ".Leader", leader.toString());
 					plugin.getConfig().set("guilds." + args[1] + ".Cod-Leaders", "");
 					plugin.getConfig().set("guilds." + args[1] + ".Members", "");
 					plugin.getConfig().set("guilds." + args[1] + ".rank", 1);
 					plugin.getConfig().set("guilds." + args[1] + ".wins", 0);
 					plugin.getConfig().set("guilds." + args[1] + ".losses", 0);
+					plugin.saveConfig();
 					return true;
 				}
 				else
 				{
 					sender.sendMessage("Incorrect usage! /g create (name)");
+					return false;
 				}
 			}
 			if(args[0].equalsIgnoreCase("addmember"))
@@ -65,30 +67,39 @@ public class GuildC implements CommandExecutor
 								target = plugin.guilds.get(i);
 							}
 					}
-					if(found = true)
+					if(found == true)
 					{
 						UUID senderUUID = ((Player) sender).getUniqueId();
 						if(senderUUID == target.getLeader() || target.coleaders.contains(senderUUID))
 						{
-							if (Bukkit.getOfflinePlayer(args[3]) != null)
+							if (Bukkit.getOfflinePlayer(args[2]) != null)
 							{
-								UUID member = Bukkit.getOfflinePlayer(args[3]).getUniqueId();
-								
+								UUID member = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+								for(int i = 0; i < plugin.guilds.size(); i++)
+								{
+									if(plugin.guilds.get(i).members.contains(member))
+									{
+										sender.sendMessage("This person is already in a guild!!!");
+										return false;
+									}
+								}
 								List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
 								list.add(member.toString());
 								plugin.getConfig().set("guilds." + args[1] + ".Members", list);
-								
+								plugin.saveConfig();
 								for(int i = 0; i < plugin.guilds.size(); i++)
 								{
 									if(target == plugin.guilds.get(i))
 									{
 										plugin.guilds.get(i).members.add(member);
+										plugin.saveConfig();
+										return true;
 									}
 								}
 							}
 							else
 							{
-								sender.sendMessage("Player " + args[3] + " does not exist!!!" );
+								sender.sendMessage("Player " + args[2] + " does not exist!!!" );
 								return false;
 							}
 							
@@ -131,15 +142,16 @@ public class GuildC implements CommandExecutor
 						UUID senderUUID = ((Player) sender).getUniqueId();
 						if(senderUUID == target.getLeader() || target.coleaders.contains(senderUUID))
 						{
-							if (Bukkit.getOfflinePlayer(args[3]) != null)
+							if (Bukkit.getOfflinePlayer(args[2]) != null)
 							{
-								UUID member = Bukkit.getOfflinePlayer(args[3]).getUniqueId();
+								UUID member = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
 								
 								if(target.members.contains(member))
 								{
 									List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
 									list.remove(member.toString());
 									plugin.getConfig().set("guilds." + args[1] + ".Members", list);
+									plugin.saveConfig();
 								
 									for(int i = 0; i < plugin.guilds.size(); i++)
 									{
@@ -156,7 +168,7 @@ public class GuildC implements CommandExecutor
 							}
 							else
 							{
-								sender.sendMessage("Player " + args[3] + " does not exist!!!" );
+								sender.sendMessage("Player " + args[2] + " does not exist!!!" );
 								return false;
 							}
 							
@@ -176,7 +188,7 @@ public class GuildC implements CommandExecutor
 				}
 				else
 				{
-					sender.sendMessage("Incorrect usage! /g addmemeber (guildname) (membername)");
+					sender.sendMessage("Incorrect usage! /g removememeber (guildname) (membername)");
 					return false;
 				}
 			}
@@ -231,6 +243,99 @@ public class GuildC implements CommandExecutor
 					
 				}
 			}
+			if(args[0].equalsIgnoreCase("promote"))
+			{
+				if(args.length == 3)
+				{
+					Guild target = null;
+					boolean found = false;
+					UUID senderUUID = ((Player) sender).getUniqueId();
+					for(int i = 0; i < plugin.guilds.size(); i++)
+					{
+						if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[2]))
+							{
+								found = true;
+								target = plugin.guilds.get(i);
+								
+								if(senderUUID == plugin.guilds.get(i).getLeader())
+								{
+									UUID memberUUID = Bukkit.getOfflinePlayer(args[3]).getUniqueId();
+									if(plugin.guilds.get(i).members.contains(memberUUID))
+									{
+										plugin.guilds.get(i).members.remove(memberUUID);
+										plugin.guilds.get(i).coleaders.add(memberUUID);
+										List<String> list = this.plugin.getConfig().getStringList("guilds." + args[2] + ".members");
+										list.remove(memberUUID.toString());
+										List<String> list2 = this.plugin.getConfig().getStringList("guilds." + args[2] + ".coleaders");
+										list2.add(memberUUID.toString());
+										plugin.saveConfig();
+										return true;	
+									}
+									else
+									{
+										sender.sendMessage("This player is not a memeber int he guild!!!");
+										return false;
+									}
+								}
+								else
+								{
+									sender.sendMessage("You do not have permission to promote in this guild");
+									return false;
+								}
+							}
+					}	
+				}
+				else
+				{
+					sender.sendMessage("Incorrect usage!! /g promote (playername) (guildname)");
+					return false;
+				}
+			}
+			if(args[0].equalsIgnoreCase("Leave"))
+			{
+				if(args.length == 2)
+				{
+					UUID senderUUID = ((Player) sender).getUniqueId();
+					for(int i = 0; i< plugin.guilds.size(); i++)
+					{
+						if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[1]))
+						{
+							if(plugin.guilds.get(i).members.contains(senderUUID))
+							{
+								List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
+								list.remove(senderUUID.toString());
+								plugin.getConfig().set("guilds." + args[1] + ".Members", list);
+								plugin.saveConfig();
+								plugin.guilds.get(i).members.remove(senderUUID);
+							}
+							if(plugin.guilds.get(i).coleaders.contains(senderUUID))
+							{
+								List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".coleaders");
+								list.remove(senderUUID.toString());
+								plugin.getConfig().set("guilds." + args[1] + ".coleaders", list);
+								plugin.saveConfig();
+								plugin.guilds.get(i).coleaders.remove(senderUUID);
+							}
+							if(plugin.guilds.get(i).leader == senderUUID)
+							{
+								sender.sendMessage("You must promote a new leader before leaving!!");
+								return false;
+							}
+						}
+						else
+						{
+							sender.sendMessage("Tat guild does not exist!!!");
+							return false;
+						}
+					}
+				}
+				else
+				{
+					sender.sendMessage("Incorrect usage!! /g leave (guildname)");
+					return false;
+				}
+			}
+			
 		}
 		return false;
 	}
