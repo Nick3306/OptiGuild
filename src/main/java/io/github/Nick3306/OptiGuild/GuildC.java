@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 
 public class GuildC implements CommandExecutor
 {
+	ArrayList<String> delete = new ArrayList<String>();
 	private Main plugin;
 	public GuildC(Main plugin)
 	 {
@@ -39,6 +40,12 @@ public class GuildC implements CommandExecutor
 				sender.sendMessage(ChatColor.YELLOW + "Promotes a member to the specified position");
 				sender.sendMessage(ChatColor.GREEN+"/g list (rank/wins/losses)");
 				sender.sendMessage(ChatColor.YELLOW + "Lists all guilds sorted in the specified manner or by creation date with no param");
+				sender.sendMessage(ChatColor.GREEN+"/g delete (guildname)");
+				sender.sendMessage(ChatColor.YELLOW + "Deletes the specified guild");
+				sender.sendMessage(ChatColor.GREEN+"/g me");
+				sender.sendMessage(ChatColor.YELLOW + "Gives info on the guild you are in");
+				sender.sendMessage(ChatColor.GREEN+"/g info (guildname)");
+				sender.sendMessage(ChatColor.YELLOW + "Gives info on the guild you specified");
 			}
 		else{
 			if (args[0].equalsIgnoreCase("create"))
@@ -112,7 +119,7 @@ public class GuildC implements CommandExecutor
 								}
 								List<String> list = this.plugin.getConfig().getStringList("guilds." + args[1] + ".members");
 								list.add(member.toString());
-								plugin.getConfig().set("guilds." + args[1] + ".Members", list);
+								plugin.getConfig().set("guilds." + args[1] + ".members", list);
 								plugin.saveConfig();
 								for(int i = 0; i < plugin.guilds.size(); i++)
 								{
@@ -431,9 +438,115 @@ public class GuildC implements CommandExecutor
 					return false;
 				}
 			}
-			
+			if(args[0].equalsIgnoreCase("me"))
+			{
+				UUID senderUUID = ((Player) sender).getUniqueId();
+				for(int i = 0; i < plugin.guilds.size(); i++)
+				{
+					if(plugin.guilds.get(i).getLeader().equals(senderUUID) || plugin.guilds.get(i).members.contains(senderUUID) || plugin.guilds.get(i).coleaders.contains(senderUUID))
+					{
+						sender.sendMessage(ChatColor.RED + "Name:" + ChatColor.GRAY +plugin.guilds.get(i).getName());
+						sender.sendMessage(ChatColor.RED + "Leader:" + ChatColor.GRAY + Bukkit.getPlayer(plugin.guilds.get(i).getLeader()).getName());
+						sender.sendMessage(ChatColor.RED + "Coleaders:");
+						for(int j = 0; j < plugin.guilds.get(i).coleaders.size(); j++)
+						{
+							sender.sendMessage(ChatColor.GRAY + "" + Bukkit.getPlayer(plugin.guilds.get(i).coleaders.get(i)).getName());
+						}
+						sender.sendMessage(ChatColor.RED + "Rank:" + ChatColor.GRAY + plugin.guilds.get(i).getRank());
+						sender.sendMessage(ChatColor.RED + "Wins:" + ChatColor.GRAY +plugin.guilds.get(i).getWins());
+						sender.sendMessage(ChatColor.RED + "Losses:" + ChatColor.GRAY +plugin.guilds.get(i).getLosses());
+						return true;
+					}
+				}
+				sender.sendMessage(ChatColor.GREEN + "You are not in a guild!");
+				return false;
+			}
+			if(args[0].equalsIgnoreCase("info"))
+			{
+				if(args.length == 2)
+				{
+					for(int i = 0; i < plugin.guilds.size(); i++)
+					{
+						if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[1]))
+						{
+							sender.sendMessage(ChatColor.RED + "Name:" + ChatColor.GRAY +plugin.guilds.get(i).getName());
+							sender.sendMessage(ChatColor.RED + "Leader:" + ChatColor.GRAY + Bukkit.getPlayer(plugin.guilds.get(i).getLeader()).getName());
+							sender.sendMessage(ChatColor.RED + "Coleaders:");
+							for(int j = 0; j < plugin.guilds.get(i).coleaders.size(); j++)
+							{
+								sender.sendMessage(ChatColor.GRAY + "" + Bukkit.getPlayer(plugin.guilds.get(i).coleaders.get(i)).getName());
+							}
+							sender.sendMessage(ChatColor.RED + "Rank:" + ChatColor.GRAY + plugin.guilds.get(i).getRank());
+							sender.sendMessage(ChatColor.RED + "Wins:" + ChatColor.GRAY +plugin.guilds.get(i).getWins());
+							sender.sendMessage(ChatColor.RED + "Losses:" + ChatColor.GRAY +plugin.guilds.get(i).getLosses());
+							return true;
+						}
+					}
+				}
+				else
+				{
+					sender.sendMessage(ChatColor.GREEN + "Incorrect usage! /g info (guildname)");
+					return false;
+				}
+			}
+			if(args[0].equalsIgnoreCase("delete"))
+			{
+				if(args.length == 2)
+				{
+					String senderName = sender.getName();
+					sender.sendMessage(ChatColor.RED + "WARNING this will delete your guild permanently. If you wish to continue, type /g yes (guildname)");
+					delete.add(senderName);
+					return true;
+				}
+				else
+				{
+					sender.sendMessage(ChatColor.GREEN + "Incorrect usage! /g delete (guildname)");
+					return false;
+				}
+			}
+			if(args[0].equalsIgnoreCase("yes"))
+			{
+				UUID senderUUID = ((Player) sender).getUniqueId();
+				String senderName = sender.getName();			
+				if(args.length == 2)
+				{
+					if(delete.contains(senderName))
+					{
+						for(int i = 0; i < plugin.guilds.size(); i++)
+						{
+							if(plugin.guilds.get(i).getName().equalsIgnoreCase(args[1]))
+							{	
+								if(plugin.guilds.get(i).getLeader().equals(senderUUID))
+								{
+									plugin.guilds.remove(i);
+									plugin.getConfig().getConfigurationSection("guilds").set(args[1], null);
+									plugin.saveConfig();
+									sender.sendMessage(ChatColor.GREEN + "Guild Deleted");
+									delete.remove(senderName);
+									return true;
+								}
+								else
+								{
+									sender.sendMessage(ChatColor.GREEN + "You are not the leader of that guild!");
+									return false;
+								}	
+					
+							}
+						
+						}
+						sender.sendMessage(ChatColor.GREEN + "That guild does not exist!!");
+						delete.remove(senderName);
+						return false;
+					}
+				}
+				else
+				{
+					sender.sendMessage(ChatColor.GREEN + "Incorrect Usage! /g yes (guildname)");
+					return false;
+				}
+			}		
 		}
-		}
+	}
 		return false;
 	}
 	
